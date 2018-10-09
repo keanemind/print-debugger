@@ -21,15 +21,6 @@ void GDBController::spawn(std::string program_name) {
         close(fd1[0]);
 
         // Set up argument list
-        /*
-        char** gdb_argv = new char*[6];
-        gdb_argv[0] = "gdb";
-        gdb_argv[1] = "--interpreter=mi";
-        gdb_argv[2] = "-n";
-        gdb_argv[3] = "-q";
-        gdb_argv[4] = program_name.c_str;
-        gdb_argv[5] = nullptr;
-        */
         char const* gdb_argv[6] = {
             "gdb",
             "--interpreter=mi",
