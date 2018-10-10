@@ -4,6 +4,7 @@
 #include <cstring>
 #include <string>
 #include <iostream>
+#include <exception>
 #include "gdb_controller.h"
 
 void GDBController::spawn(std::string program_name) {
@@ -17,7 +18,7 @@ void GDBController::spawn(std::string program_name) {
     pipe(fd1);
     int pid = fork();
     if (pid == -1) {
-
+        throw std::runtime_error("Fork failed.");
     } else if (pid == 0) {
         // Child
         // Close unused ends of pipes

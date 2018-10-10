@@ -8,5 +8,8 @@ class GDBController {
     FILE* in;
 
     public:
+    /* Spawn a GDB process. Does nothing if this
+       object is already associated with a running
+       GDB process. */
     void spawn(std::string program_name);
 };
