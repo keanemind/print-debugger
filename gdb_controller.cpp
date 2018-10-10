@@ -7,6 +7,10 @@
 #include "gdb_controller.h"
 
 void GDBController::spawn(std::string program_name) {
+    if (this->running) {
+        return;
+    }
+
     int fd0[2]; // PDB -> GDB
     int fd1[2]; // GDB -> PDB
     pipe(fd0);
