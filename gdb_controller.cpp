@@ -5,7 +5,7 @@
 #include <string>
 #include <iostream>
 #include <exception>
-#include "gdb_controller.h"
+#include "gdb_controller.hpp"
 
 void GDBController::spawn(std::string program_name) {
     if (this->running) {

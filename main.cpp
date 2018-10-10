@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <sys/wait.h>
 #include <string>
-#include "gdb_controller.h"
+#include "gdb_controller.hpp"
 
 int main(int argc, char** argv) {
     if (argc == 0) {
