@@ -12,11 +12,9 @@ void GDBController::spawn(std::string program_name) {
         return;
     }
 
-    int fd0[2]; // PDB -> GDB
-    int fd1[2]; // GDB -> PDB
     pipe(fd0);
     pipe(fd1);
-    int pid = fork();
+    pid = fork();
     if (pid == -1) {
         throw std::runtime_error("Fork failed.");
     } else if (pid == 0) {
@@ -47,14 +45,11 @@ void GDBController::spawn(std::string program_name) {
         exit(1);
     }
     // Parent
-    this->pid = pid;
-
     // Close unused ends of pipes
     close(fd0[0]);
     close(fd1[1]);
 
     // Set up files
-    this->out = fdopen(fd0[1], "w");
     this->in = fdopen(fd1[0], "r");
 
     // Wait for output and check that GDB started successfully
@@ -82,4 +77,44 @@ void GDBController::spawn(std::string program_name) {
         std::cout << "Last outputted line: " << std::endl;
         std::cout << gdb_start_output << std::endl;
     }
+}
+
+void GDBController::kill() {
+    dprintf(fd0[1], "-gdb-exit\r\n");
+    char gdb_output[50];
+    do {
+        fgets(gdb_output, 50, this->in);
+        std::cout << gdb_output;
+    } while (std::string(gdb_output).compare(0, 5, "^exit"));
+    std::cout << std::endl;
+}
+
+void GDBController::run() {
+    dprintf(fd0[1], "-exec-run\r\n");
+    char gdb_output[50];
+    do {
+        fgets(gdb_output, 50, this->in);
+        std::cout << gdb_output;
+    } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
+    std::cout << std::endl;
+}
+
+void GDBController::cont() {
+    dprintf(fd0[1], "-exec-continue\r\n");
+    char gdb_output[50];
+    do {
+        fgets(gdb_output, 50, this->in);
+        std::cout << gdb_output;
+    } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
+    std::cout << std::endl;
+}
+
+void GDBController::add_breakpoint(std::string filename, unsigned int line_no) {
+    dprintf(fd0[1], "-break-insert %s:%u\r\n", filename.c_str(), line_no);
+    char gdb_output[50];
+    do {
+        fgets(gdb_output, 50, this->in);
+        std::cout << gdb_output;
+    } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
+    std::cout << std::endl;
 }
