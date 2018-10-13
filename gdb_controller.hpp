@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <string>
+#include <vector>
 
 class GDBController {
     bool running = false;
@@ -8,7 +9,12 @@ class GDBController {
     int fd1[2]; // GDB -> PDB
     FILE* in;
 
-    public:
+    void set_breakpoint_command(
+        unsigned int bp_no,
+        std::vector<std::string> commands
+    );
+
+public:
     /* Spawn a GDB process. Does nothing if this
        object is already associated with a running
        GDB process. */

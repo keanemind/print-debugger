@@ -118,3 +118,20 @@ void GDBController::add_breakpoint(std::string filename, unsigned int line_no) {
     } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
     std::cout << std::endl;
 }
+
+void GDBController::set_breakpoint_command(
+    unsigned int bp_no,
+    std::vector<std::string> commands
+) {
+    std::string combined;
+    for (int i = 0; i < commands.size(); i++) {
+        combined += commands[i];
+    }
+    dprintf(fd0[1], "-break-commands %u %s\r\n", bp_no, combined.c_str());
+    char gdb_output[50];
+    do {
+        fgets(gdb_output, 50, this->in);
+        std::cout << gdb_output;
+    } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
+    std::cout << std::endl;
+}
