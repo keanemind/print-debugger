@@ -19,9 +19,21 @@ public:
        object is already associated with a running
        GDB process. */
     void spawn(std::string program_name);
+
+    /* Kill the GDB process associated with this GDBController. */
     void kill();
+
+    /* Run the target program. */
     void run();
+
+    /* Continue the target program from a breakpoint. */
     void cont();
+
+    /* Add a breakpoint.
+       Returns the number of the newly created breakpoint. */
     int add_breakpoint(std::string filename, unsigned int line_no);
+
+    /* Make the specified breakpoint print the value of the name
+       provided. */
     void set_breakpoint_print(unsigned int bp_no, std::string name);
 };
