@@ -80,6 +80,9 @@ void GDBController::spawn(std::string program_name) {
 }
 
 void GDBController::kill() {
+    if (!running) {
+        return;
+    }
     dprintf(fd0[1], "-gdb-exit\r\n");
     char gdb_output[50];
     do {
