@@ -22,6 +22,6 @@ public:
     void kill();
     void run();
     void cont();
-    void add_breakpoint(std::string filename, unsigned int line_no);
+    int add_breakpoint(std::string filename, unsigned int line_no);
     void set_breakpoint_print(unsigned int bp_no, std::string name);
 };

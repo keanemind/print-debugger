@@ -112,7 +112,7 @@ void GDBController::cont() {
     std::cout << std::endl;
 }
 
-void GDBController::add_breakpoint(std::string filename, unsigned int line_no) {
+int GDBController::add_breakpoint(std::string filename, unsigned int line_no) {
     dprintf(fd0[1], "-break-insert %s:%u\r\n", filename.c_str(), line_no);
     char gdb_output[50];
     do {
@@ -120,6 +120,7 @@ void GDBController::add_breakpoint(std::string filename, unsigned int line_no) {
         std::cout << gdb_output;
     } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
     std::cout << std::endl;
+    return 0;
 }
 
 void GDBController::set_breakpoint_command(
