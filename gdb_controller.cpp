@@ -125,7 +125,7 @@ void GDBController::set_breakpoint_command(
 ) {
     std::string combined;
     for (int i = 0; i < commands.size(); i++) {
-        combined += commands[i];
+        combined += "\"" + commands[i] + "\" ";
     }
     dprintf(fd0[1], "-break-commands %u %s\r\n", bp_no, combined.c_str());
     char gdb_output[50];
@@ -134,4 +134,13 @@ void GDBController::set_breakpoint_command(
         std::cout << gdb_output;
     } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
     std::cout << std::endl;
+}
+
+void GDBController::set_breakpoint_print(
+    unsigned int bp_no, std::string name
+) {
+    std::vector<std::string> commands;
+    commands.push_back("print " + name);
+    commands.push_back("continue");
+    set_breakpoint_command(bp_no, commands);
 }

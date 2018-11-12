@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     GDBController gdb;
     gdb.spawn(std::string(argv[1]));
     gdb.add_breakpoint(std::string("hello.cpp"), 4);
+    gdb.set_breakpoint_print(1, "main");
     gdb.run();
-    gdb.cont();
     gdb.kill();
 }
