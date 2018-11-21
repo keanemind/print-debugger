@@ -13,9 +13,9 @@ int main(int argc, char** argv) {
         // Print help
     }
     std::cout << "Starting GDB." << std::endl;
-    GDBController gdb;
+    GDB::Controller gdb;
     gdb.spawn(std::string(argv[1]));
-    Breakpoint bp = gdb.add_breakpoint(std::string("hello.cpp"), 6);
+    GDB::Breakpoint bp = gdb.add_breakpoint(std::string("hello.cpp"), 6);
     bp.add_command("print main");
     bp.add_command("print my_str");
     gdb.run();

@@ -7,11 +7,13 @@
 #include <exception>
 #include "gdb_controller.hpp"
 
-GDBInterface::GDBInterface() {
+using namespace GDB;
+
+Interface::Interface() {
     // TODO: deal with this absurdity
 }
 
-GDBInterface::GDBInterface(int fd0[2], int fd1[2]) {
+Interface::Interface(int fd0[2], int fd1[2]) {
     this->fd0[0] = fd0[0];
     this->fd0[1] = fd0[1];
     this->fd1[0] = fd1[0];
@@ -19,7 +21,7 @@ GDBInterface::GDBInterface(int fd0[2], int fd1[2]) {
     this->in = fdopen(fd1[0], "r");
 }
 
-bool GDBInterface::check_startup_output() {
+bool Interface::check_startup_output() {
     char gdb_start_output[50];
 
     // Read up to five lines from GDB
@@ -46,11 +48,11 @@ bool GDBInterface::check_startup_output() {
     return false;
 }
 
-std::string GDBInterface::send(std::string command) {
+std::string Interface::send(std::string command) {
     return send(command, "(gdb)");
 }
 
-std::string GDBInterface::send(std::string command, std::string response_terminator) {
+std::string Interface::send(std::string command, std::string response_terminator) {
     write(fd0[1], command.c_str(), command.size());
     char gdb_output[50];
     do {
@@ -63,7 +65,7 @@ std::string GDBInterface::send(std::string command, std::string response_termina
     return std::string();
 }
 
-void GDBController::spawn(std::string program_name) {
+void Controller::spawn(std::string program_name) {
     if (this->running) {
         return;
     }
@@ -108,8 +110,8 @@ void GDBController::spawn(std::string program_name) {
     close(fd0[0]);
     close(fd1[1]);
 
-    // Create GDBInterface
-    interface = GDBInterface(fd0, fd1);
+    // Create Interface
+    interface = Interface(fd0, fd1);
 
     // Wait for output and check that GDB started successfully
     if (!interface.check_startup_output()) {
@@ -118,22 +120,22 @@ void GDBController::spawn(std::string program_name) {
     this->running = true;
 }
 
-void GDBController::kill() {
+void Controller::kill() {
     if (!running) {
         return;
     }
     interface.send("-gdb-exit\r\n", "^exit");
 }
 
-void GDBController::run() {
+void Controller::run() {
     interface.send("-exec-run\r\n");
 }
 
-void GDBController::cont() {
+void Controller::cont() {
     interface.send("-exec-continue\r\n");
 }
 
-Breakpoint& GDBController::add_breakpoint(std::string filename, unsigned int line_no) {
+Breakpoint& Controller::add_breakpoint(std::string filename, unsigned int line_no) {
     interface.send("-break-insert " + filename + ":" + std::to_string(line_no) + "\r\n");
 
     // TODO: Parse output, initialize Breakpoint object, return it.
@@ -143,8 +145,8 @@ Breakpoint& GDBController::add_breakpoint(std::string filename, unsigned int lin
 }
 
 Breakpoint::Breakpoint(
-    GDBController& controller,
-    GDBInterface& interface,
+    Controller& controller,
+    Interface& interface,
     int id,
     std::string filename,
     int line_no
