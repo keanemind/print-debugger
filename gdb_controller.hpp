@@ -1,3 +1,5 @@
+#ifndef GDB_CONTROLLER_HPP
+#define GDB_CONTROLLER_HPP 1
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -84,3 +86,4 @@ public:
     /* Returns the specified breakpoint. */
     Breakpoint& get_breakpoint(unsigned int bp_no);
 };
+#endif
