@@ -9,8 +9,10 @@
 #include "gdb_controller.hpp"
 
 int main(int argc, char** argv) {
-    if (argc == 0) {
-        // Print help
+    if (argc == 1) {
+        // TODO: Print more detailed help
+        std::cout << "You must specify a program to debug as an argument." << std::endl;
+        return 0;
     }
     std::cout << "Starting GDB." << std::endl;
     GDB::Controller gdb;
