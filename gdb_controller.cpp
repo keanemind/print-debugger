@@ -7,10 +7,70 @@
 #include <exception>
 #include "gdb_controller.hpp"
 
+GDBInterface::GDBInterface() {
+    // TODO: deal with this absurdity
+}
+
+GDBInterface::GDBInterface(int fd0[2], int fd1[2]) {
+    this->fd0[0] = fd0[0];
+    this->fd0[1] = fd0[1];
+    this->fd1[0] = fd1[0];
+    this->fd1[1] = fd1[1];
+    this->in = fdopen(fd1[0], "r");
+}
+
+bool GDBInterface::check_startup_output() {
+    char gdb_start_output[50];
+
+    // Read up to five lines from GDB
+    int i;
+    for (i = 0; i < 5; i++) {
+        fgets(gdb_start_output, 50, this->in);
+
+        if (!std::string(gdb_start_output).compare(0, 5, "(gdb)")) {
+            std::cout << "GDB is running." << std::endl;
+            return true;
+        } else if (!strcmp(gdb_start_output, "EXECVP_ERROR")) {
+            std::cout << "EXECVP FAILED." << std::endl;
+            break;
+        }
+    }
+
+    // If GDB never outputted anything expected (the for loop did not
+    // get broken), log an error
+    if (i >= 5) {
+        std::cout << "Unexpected output from GDB during startup. ";
+        std::cout << "Last outputted line: " << std::endl;
+        std::cout << gdb_start_output << std::endl;
+    }
+    return false;
+}
+
+std::string GDBInterface::send(std::string command) {
+    return send(command, "(gdb)");
+}
+
+std::string GDBInterface::send(std::string command, std::string response_terminator) {
+    dprintf(fd0[1], command.c_str());
+    //write(fd0[1], command.c_str(), command.size());
+    char gdb_output[50];
+    do {
+        fgets(gdb_output, 50, this->in);
+        std::cout << gdb_output;
+    } while (std::string(gdb_output).compare(0, response_terminator.size(), response_terminator));
+    std::cout << std::endl;
+
+    // TODO: return actual response
+    return std::string();
+}
+
 void GDBController::spawn(std::string program_name) {
     if (this->running) {
         return;
     }
+
+    int fd0[2];
+    int fd1[2];
 
     pipe(fd0);
     pipe(fd1);
@@ -49,102 +109,81 @@ void GDBController::spawn(std::string program_name) {
     close(fd0[0]);
     close(fd1[1]);
 
-    // Set up files
-    this->in = fdopen(fd1[0], "r");
+    // Create GDBInterface
+    interface = GDBInterface(fd0, fd1);
 
     // Wait for output and check that GDB started successfully
-    char gdb_start_output[50];
-
-    // Read up to five lines from GDB
-    int i;
-    for (i = 0; i < 5; i++) {
-        fgets(gdb_start_output, 50, this->in);
-
-        if (!std::string(gdb_start_output).compare(0, 5, "(gdb)")) {
-            std::cout << "GDB is running." << std::endl;
-            this->running = true;
-            break;
-        } else if (!strcmp(gdb_start_output, "EXECVP_ERROR")) {
-            std::cout << "EXECVP FAILED." << std::endl;
-            break;
-        }
+    if (!interface.check_startup_output()) {
+        // Throw exception
     }
-
-    // If GDB never outputted anything expected (the for loop did not
-    // get broken), log an error
-    if (i >= 5) {
-        std::cout << "Unexpected output from GDB during startup. ";
-        std::cout << "Last outputted line: " << std::endl;
-        std::cout << gdb_start_output << std::endl;
-    }
+    this->running = true;
 }
 
 void GDBController::kill() {
     if (!running) {
         return;
     }
-    dprintf(fd0[1], "-gdb-exit\r\n");
-    char gdb_output[50];
-    do {
-        fgets(gdb_output, 50, this->in);
-        std::cout << gdb_output;
-    } while (std::string(gdb_output).compare(0, 5, "^exit"));
-    std::cout << std::endl;
+    interface.send("-gdb-exit\r\n", "^exit");
 }
 
 void GDBController::run() {
-    dprintf(fd0[1], "-exec-run\r\n");
-    char gdb_output[50];
-    do {
-        fgets(gdb_output, 50, this->in);
-        std::cout << gdb_output;
-    } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
-    std::cout << std::endl;
+    interface.send("-exec-run\r\n");
 }
 
 void GDBController::cont() {
-    dprintf(fd0[1], "-exec-continue\r\n");
-    char gdb_output[50];
-    do {
-        fgets(gdb_output, 50, this->in);
-        std::cout << gdb_output;
-    } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
-    std::cout << std::endl;
+    interface.send("-exec-continue\r\n");
 }
 
-int GDBController::add_breakpoint(std::string filename, unsigned int line_no) {
-    dprintf(fd0[1], "-break-insert %s:%u\r\n", filename.c_str(), line_no);
-    char gdb_output[50];
-    do {
-        fgets(gdb_output, 50, this->in);
-        std::cout << gdb_output;
-    } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
-    std::cout << std::endl;
-    return 0;
+Breakpoint& GDBController::add_breakpoint(std::string filename, unsigned int line_no) {
+    interface.send("-break-insert " + filename + ":" + std::to_string(line_no) + "\r\n");
+
+    // TODO: Parse output, initialize Breakpoint object, return it.
+    Breakpoint bp = Breakpoint(*this, interface, 1, "", 1);
+    breakpoints.insert({1, bp});
+    return breakpoints.at(1);
 }
 
-void GDBController::set_breakpoint_command(
-    unsigned int bp_no,
-    std::vector<std::string> commands
-) {
+Breakpoint::Breakpoint(
+    GDBController& controller,
+    GDBInterface& interface,
+    int id,
+    std::string filename,
+    int line_no
+) : controller(controller), interface(interface) {
+    this->id = id;
+    this->filename = filename;
+    this->line_no = line_no;
+    commands.push_back("continue");
+}
+
+Breakpoint& Breakpoint::operator=(const Breakpoint& right) {
+    this->controller = right.controller;
+    this->interface = right.interface;
+    this->id = right.id;
+    this->filename = right.filename;
+    this->line_no = right.line_no;
+}
+
+void Breakpoint::update_commands() {
     std::string combined;
     for (int i = 0; i < commands.size(); i++) {
         combined += "\"" + commands[i] + "\" ";
     }
-    dprintf(fd0[1], "-break-commands %u %s\r\n", bp_no, combined.c_str());
-    char gdb_output[50];
-    do {
-        fgets(gdb_output, 50, this->in);
-        std::cout << gdb_output;
-    } while (std::string(gdb_output).compare(0, 5, "(gdb)"));
-    std::cout << std::endl;
+    interface.send("-break-commands " + std::to_string(id) + " " + combined + "\r\n");
 }
 
-void GDBController::set_breakpoint_print(
-    unsigned int bp_no, std::string name
-) {
-    std::vector<std::string> commands;
-    commands.push_back("print " + name);
+void Breakpoint::add_command(std::string command) {
+    commands.pop_back();
+    commands.push_back(command);
     commands.push_back("continue");
-    set_breakpoint_command(bp_no, commands);
+    update_commands();
+}
+
+bool Breakpoint::remove_command(std::string command) {
+    // TODO
+}
+
+void Breakpoint::clear_commands() {
+    commands.clear();
+    update_commands();
 }
