@@ -51,8 +51,7 @@ std::string GDBInterface::send(std::string command) {
 }
 
 std::string GDBInterface::send(std::string command, std::string response_terminator) {
-    dprintf(fd0[1], command.c_str());
-    //write(fd0[1], command.c_str(), command.size());
+    write(fd0[1], command.c_str(), command.size());
     char gdb_output[50];
     do {
         fgets(gdb_output, 50, this->in);
