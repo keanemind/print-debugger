@@ -95,19 +95,18 @@ std::string Controller::send(
     std::string response_terminator
 ) {
     write(fd0[1], command.c_str(), command.size());
+    std::string ret;
     char gdb_output[50];
     do {
         fgets(gdb_output, 50, this->in);
-        std::cout << gdb_output;
+        ret.append(gdb_output);
     } while (
         std::string(gdb_output).compare(
             0, response_terminator.size(), response_terminator
         )
     );
-    std::cout << std::endl;
-
-    // TODO: return actual response
-    return std::string();
+    std::cout << ret << std::endl;
+    return ret;
 }
 
 void Controller::kill() {
