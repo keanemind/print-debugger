@@ -7,39 +7,12 @@
 
 
 namespace GDB {
-    class Interface;
     class Breakpoint;
     class Controller;
-
-    /* A messaging interface between this program and a GDB process.
-       Must be initialized by a Controller. */
-    class Interface {
-        int fd0[2]; // PDB -> GDB
-        int fd1[2]; // GDB -> PDB
-        FILE* in;
-    public:
-        Interface();
-        Interface(int fd0[2], int fd1[2]);
-
-        /* Wait for and receive the output that GDB prints on startup.
-           Returns whether the output is what is expected from a successful
-           startup. */
-        bool check_startup_output();
-
-        /* Send text to the GDB process.
-           Wait for the process to reply with a line that starts with (gdb) */
-        std::string send(std::string command);
-
-        /* Send text to the GDB process.
-           Wait for the process to reply with a line that starts with
-           response_terminator. */
-        std::string send(std::string command, std::string response_terminator);
-    };
 
     /* A GDB breakpoint. */
     class Breakpoint {
         Controller& controller;
-        Interface& interface;
 
         int id; // breakpoint number
         std::string filename;
@@ -52,7 +25,6 @@ namespace GDB {
     public:
         Breakpoint(
             Controller& controller,
-            Interface& interface,
             int id,
             std::string filename,
             int line_no
@@ -72,9 +44,16 @@ namespace GDB {
 
     /* An object for managing a GDB process. */
     class Controller {
-        Interface interface;
+        // Communication
+        int fd0[2]; // PDB -> GDB
+        int fd1[2]; // GDB -> PDB
+        FILE* in;
+
+        // Process information
         bool running = false;
         int pid = 0;
+
+        // GDB information
         std::unordered_map<int, Breakpoint> breakpoints; // bp_no : bp
 
     public:
@@ -82,6 +61,15 @@ namespace GDB {
         object is already associated with a running
         GDB process. */
         void spawn(std::string program_name);
+
+        /* Send text to the GDB process.
+           Wait for the process to reply with a line that starts with (gdb) */
+        std::string send(std::string command);
+
+        /* Send text to the GDB process.
+           Wait for the process to reply with a line that starts with
+           response_terminator. */
+        std::string send(std::string command, std::string response_terminator);
 
         /* Kill the GDB process associated with this Controller. */
         void kill();
