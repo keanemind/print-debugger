@@ -11,7 +11,8 @@
 int main(int argc, char** argv) {
     if (argc == 1) {
         // TODO: Print more detailed help
-        std::cout << "You must specify a program to debug as an argument." << std::endl;
+        std::cout << "You must specify a program to debug as an argument."
+        << std::endl;
         return 0;
     }
     std::cout << "Starting GDB." << std::endl;

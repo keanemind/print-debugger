@@ -52,13 +52,20 @@ std::string Interface::send(std::string command) {
     return send(command, "(gdb)");
 }
 
-std::string Interface::send(std::string command, std::string response_terminator) {
+std::string Interface::send(
+    std::string command,
+    std::string response_terminator
+) {
     write(fd0[1], command.c_str(), command.size());
     char gdb_output[50];
     do {
         fgets(gdb_output, 50, this->in);
         std::cout << gdb_output;
-    } while (std::string(gdb_output).compare(0, response_terminator.size(), response_terminator));
+    } while (
+        std::string(gdb_output).compare(
+            0, response_terminator.size(), response_terminator
+        )
+    );
     std::cout << std::endl;
 
     // TODO: return actual response
@@ -135,8 +142,13 @@ void Controller::cont() {
     interface.send("-exec-continue\r\n");
 }
 
-Breakpoint& Controller::add_breakpoint(std::string filename, unsigned int line_no) {
-    interface.send("-break-insert " + filename + ":" + std::to_string(line_no) + "\r\n");
+Breakpoint& Controller::add_breakpoint(
+    std::string filename,
+    unsigned int line_no
+) {
+    interface.send(
+        "-break-insert " + filename + ":" + std::to_string(line_no) + "\r\n"
+    );
 
     // TODO: Parse output, initialize Breakpoint object, return it.
     Breakpoint bp = Breakpoint(*this, interface, 1, "", 1);
@@ -170,7 +182,9 @@ void Breakpoint::update_commands() {
     for (int i = 0; i < commands.size(); i++) {
         combined += "\"" + commands[i] + "\" ";
     }
-    interface.send("-break-commands " + std::to_string(id) + " " + combined + "\r\n");
+    interface.send(
+        "-break-commands " + std::to_string(id) + " " + combined + "\r\n"
+    );
 }
 
 void Breakpoint::add_command(std::string command) {
