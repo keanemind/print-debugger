@@ -59,8 +59,19 @@ void Controller::spawn(std::string program_name) {
     char gdb_start_output[50];
 
     // Read up to five lines from GDB
-    int i;
-    for (i = 0; i < 5; i++) {
+    for (int i = 0; i < 5; i++) {
+        // Give GDB 1 second to respond
+        fd_set read_set;
+        FD_ZERO(&read_set);
+        FD_SET(fd1[0], &read_set);
+        timeval timeout = {.tv_sec = 3, .tv_usec = 0};
+        int result = select(fd1[0] + 1, &read_set, NULL, NULL, &timeout);
+        if (result == 0) { // GDB did not reply
+            throw std::runtime_error(
+                "No expected reply from GDB during startup."
+            );
+        }
+
         fgets(gdb_start_output, 50, this->in);
 
         if (!std::string(gdb_start_output).compare(0, 5, "(gdb)")) {
@@ -68,21 +79,17 @@ void Controller::spawn(std::string program_name) {
             this->running = true;
             break;
         } else if (!strcmp(gdb_start_output, "EXECVP_ERROR")) {
-            std::cout << "EXECVP FAILED." << std::endl;
-            break;
+            throw std::runtime_error("execvp() failure.");
         }
     }
 
     // If GDB never outputted anything expected (the for loop did not
     // get broken), log an error
-    if (i >= 5) {
-        std::cout << "Unexpected output from GDB during startup. ";
-        std::cout << "Last outputted line: " << std::endl;
-        std::cout << gdb_start_output << std::endl;
-    }
-
     if (!running) {
-        // Throw exception
+        std::string err_msg = "Unexpected output from GDB during startup. "
+                              "Last outputted line: ";
+        err_msg += gdb_start_output;
+        throw std::runtime_error(err_msg.c_str());
     }
 }
 
@@ -103,8 +110,7 @@ std::string Controller::send(
     timeval timeout = {.tv_sec = 3, .tv_usec = 0};
     int result = select(fd1[0] + 1, &read_set, NULL, NULL, &timeout);
     if (result == 0) { // GDB did not reply
-        std::cout << "ERROR: GDB did not reply." << std::endl;
-        return "";
+        throw std::runtime_error("No reply from GDB.");
     }
 
     std::string ret;
