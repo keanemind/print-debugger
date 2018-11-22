@@ -95,6 +95,18 @@ std::string Controller::send(
     std::string response_terminator
 ) {
     write(fd0[1], command.c_str(), command.size());
+
+    // Give GDB 3 seconds to respond
+    fd_set read_set;
+    FD_ZERO(&read_set);
+    FD_SET(fd1[0], &read_set);
+    timeval timeout = {.tv_sec = 3, .tv_usec = 0};
+    int result = select(fd1[0] + 1, &read_set, NULL, NULL, &timeout);
+    if (result == 0) { // GDB did not reply
+        std::cout << "ERROR: GDB did not reply." << std::endl;
+        return "";
+    }
+
     std::string ret;
     char gdb_output[50];
     do {
