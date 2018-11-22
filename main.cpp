@@ -19,8 +19,10 @@ int main(int argc, char** argv) {
     GDB::Controller gdb;
     gdb.spawn(std::string(argv[1]));
     GDB::Breakpoint bp = gdb.add_breakpoint(std::string("hello.cpp"), 6);
+    bp.add_command("print cout");
     bp.add_command("print main");
     bp.add_command("print my_str");
+    bp.remove_command("print cout");
     gdb.run();
     gdb.kill();
 }

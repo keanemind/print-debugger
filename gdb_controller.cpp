@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <exception>
+#include <algorithm>
 #include "gdb_controller.hpp"
 
 using namespace GDB;
@@ -195,7 +196,16 @@ void Breakpoint::add_command(std::string command) {
 }
 
 bool Breakpoint::remove_command(std::string command) {
-    // TODO
+    auto it = std::find(commands.begin(), commands.end(), command);
+    if (it != commands.end()) {
+        commands.pop_back();
+
+        std::swap(*it, commands.back());
+        commands.pop_back();
+
+        commands.push_back("continue");
+        update_commands();
+    }
 }
 
 void Breakpoint::clear_commands() {
