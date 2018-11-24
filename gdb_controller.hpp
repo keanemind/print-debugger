@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <exception>
+#include <chrono>
 
 
 namespace GDB {
@@ -56,6 +57,10 @@ namespace GDB {
            If GDB does not reply, it will be assumed frozen. It will be killed
            and a NoReplyException will be thrown. */
         std::string await_reply(std::string response_terminator);
+
+        /* Wait for the running flag to become false, or the timeout to expire,
+           whichever comes first. */
+        void wait_for_stop(std::chrono::milliseconds timeout);
 
     public:
         Controller();

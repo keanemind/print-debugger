@@ -9,6 +9,8 @@
 #include <csignal>
 #include <sys/wait.h>
 #include <cassert>
+#include <chrono>
+#include <thread>
 #include "gdb_controller.hpp"
 
 using namespace GDB;
@@ -203,22 +205,55 @@ std::string Controller::await_reply(std::string response_terminator) {
     return ret;
 }
 
+void Controller::wait_for_stop(std::chrono::milliseconds timeout) {
+    auto start = std::chrono::high_resolution_clock::now();
+    auto now = start;
+    auto duration = std::chrono::seconds(1);
+    auto margin = std::chrono::milliseconds(5);
+    while (now < start + duration) {
+        std::this_thread::sleep_for(
+            start + duration - now + margin
+        );
+        if (!running) {
+            break;
+        }
+        now = std::chrono::high_resolution_clock::now();
+    }
+}
+
 void Controller::exit() {
     send("-gdb-exit\r\n", "^exit");
-
-    // Block until sigchld_handler is run (GDB finishes exiting).
-    if (waitid(P_PID, pid, nullptr, WEXITED | WNOWAIT) == -1) {
-        std::string err = "waitid() failed: ";
-        err += strerror(errno);
-        throw std::runtime_error(err.c_str());
-    }
     close(fd0[1]);
     close(fd1[0]);
+
+    // Block until sigchld_handler is run (GDB finishes exiting), with
+    // a time limit of 1 second.
+    wait_for_stop(std::chrono::milliseconds(1000));
+    if (running) {
+        // Make closed fds invalid so that kill can't accidentally close
+        // a newly opened fd with the same number. This would only be a problem
+        // with multithreading, which GDB Controller may someday use.
+        fd0[1] = -1;
+        fd1[0] = -1;
+        this->kill();
+    }
 }
 
 void Controller::kill() {
-    ::kill(pid, SIGTERM);
-    // ::kill(pid, SIGKILL);
+    if (running) {
+        close(fd0[1]);
+        close(fd1[0]);
+        wait_for_stop(std::chrono::milliseconds(1000));
+    }
+
+    if (running) {
+        ::kill(pid, SIGTERM);
+        wait_for_stop(std::chrono::milliseconds(1000));
+    }
+
+    if (running) {
+        ::kill(pid, SIGKILL);
+    }
 }
 
 void Controller::run() {
