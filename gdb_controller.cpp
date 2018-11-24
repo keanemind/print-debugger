@@ -268,7 +268,10 @@ void Controller::run() {
 }
 
 void Controller::cont() {
-    send("-exec-continue\r\n");
+    std::string reply = send("-exec-continue\r\n");
+    if (reply.find("^running") != 0) {
+        throw std::runtime_error("Continue failed.");
+    }
 }
 
 Breakpoint Controller::add_breakpoint(
