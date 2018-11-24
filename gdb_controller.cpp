@@ -234,12 +234,46 @@ Breakpoint Controller::add_breakpoint(
     std::string filename,
     unsigned int line_no
 ) {
-    send(
+    std::string reply = send(
         "-break-insert " + filename + ":" + std::to_string(line_no) + "\r\n"
     );
 
-    // TODO: Parse output, initialize Breakpoint object, return it.
-    return Breakpoint(*this, 1, "", 1);
+    // Breakpoint fields that will be filled in
+    int id_field;
+    std::string filename_field;
+    int line_no_field;
+
+    // Parse output to get Breakpoint object fields
+    unsigned int bracket_open = reply.find("{");
+    unsigned int bracket_close = reply.rfind("}");
+    unsigned int start = bracket_open + 1;
+    unsigned int end = reply.find(',', start);
+    while (end < bracket_close) {
+        // Get field name
+        int loc_equal = reply.find('=', start);
+        int field_name_len = loc_equal - start;
+        std::string field_name = reply.substr(start, field_name_len);
+
+        // Get value as string (starts at loc_equal + 2)
+        int value_len = end - 1 - (loc_equal + 2);
+        std::string value = reply.substr(loc_equal + 2, value_len);
+
+        if (field_name == "number") {
+            id_field = std::stoi(value);
+        } else if (field_name == "file") {
+            filename_field = value;
+        } else if (field_name == "line") {
+            line_no_field = std::stoi(value);
+        }
+
+        start = end + 1;
+        end = reply.find(',', start);
+    }
+
+    // Even if the return is assigned somewhere, this will actually call the
+    // constructor only once, so update_commands() is not going to
+    // inefficiently be called twice. 
+    return Breakpoint(*this, id_field, filename_field, line_no_field);
 }
 
 bool Controller::remove_breakpoint(int bp_no) {

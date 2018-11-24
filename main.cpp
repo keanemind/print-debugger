@@ -21,6 +21,7 @@ int main(int argc, char** argv) {
     GDB::Breakpoint bp = gdb.add_breakpoint(std::string("hello.cpp"), 6);
     bp.add_command("print cout");
     bp.add_command("print main");
+    GDB::Breakpoint bp1 = gdb.add_breakpoint("hello.cpp", 5);
     bp.add_command("print my_str");
     bp.remove_command("print cout");
     gdb.run();
