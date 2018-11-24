@@ -15,41 +15,9 @@ namespace GDB {
         const char* what() const throw();
     };
 
-    /* A GDB breakpoint. */
-    class Breakpoint {
-        Controller& controller;
-
-        int id; // breakpoint number
-        std::string filename;
-        int line_no;
-        std::vector<std::string> commands;
-
-        /* Update GDB with the current command list. */
-        void update_commands();
-
-    public:
-        Breakpoint(
-            Controller& controller,
-            int id,
-            std::string filename,
-            int line_no
-        );
-
-        /* Add a command to this breakpoint's command list. */
-        void add_command(std::string command);
-
-        /* Remove a command from this breakpoint's command list. */
-        bool remove_command(std::string command);
-
-        /* Clear all commands from this breakpoint. */
-        void clear_commands();
-
-        Breakpoint& operator=(const Breakpoint& right);
-    };
-
     /* An object for managing a GDB process. */
     class Controller {
-        // Module
+        /* Module variables */
         static bool is_initialized; // whether the module has been initialized
 
         /* Maps pids to pointers to Controller instances associated with running
@@ -62,19 +30,22 @@ namespace GDB {
            which will kill the GDB process, causing sigchld_handler to remove
            the Controller from here. */
         static std::unordered_map<int, Controller*> running_gdbs;
-        static void sigchld_handler(int sig_num, siginfo_t *sinfo, void *unused);
 
-        // Communication
-        int fd0[2]; // PDB -> GDB
-        int fd1[2]; // GDB -> PDB
+        /* Communication variables */
+        int fd0[2]; // pipe: PDB -> GDB
+        int fd1[2]; // pipe: GDB -> PDB
         FILE* in;
 
-        // Process information
+        /* Process information variables */
         bool running = false;
         int pid = 0;
 
-        // GDB information
+        /* GDB information variables*/
         std::unordered_map<int, Breakpoint> breakpoints; // bp_no : bp
+
+        static void sigchld_handler(
+            int sig_num, siginfo_t *sinfo, void *unused
+        );
 
     public:
         Controller();
@@ -120,6 +91,38 @@ namespace GDB {
 
         /* Returns the specified breakpoint. */
         Breakpoint& get_breakpoint(unsigned int bp_no);
+    };
+
+    /* A GDB breakpoint. */
+    class Breakpoint {
+        Controller& controller;
+
+        int id; // breakpoint number
+        std::string filename;
+        int line_no;
+        std::vector<std::string> commands;
+
+        /* Update GDB with the current command list. */
+        void update_commands();
+
+    public:
+        Breakpoint(
+            Controller& controller,
+            int id,
+            std::string filename,
+            int line_no
+        );
+
+        /* Add a command to this breakpoint's command list. */
+        void add_command(std::string command);
+
+        /* Remove a command from this breakpoint's command list. */
+        bool remove_command(std::string command);
+
+        /* Clear all commands from this breakpoint. */
+        void clear_commands();
+
+        Breakpoint& operator=(const Breakpoint& right);
     };
 }
 #endif

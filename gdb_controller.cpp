@@ -13,9 +13,11 @@
 
 using namespace GDB;
 
+
 const char* NotRunningException::what() const throw() {
     return "GDB process is not running.";
 }
+
 
 bool Controller::is_initialized = false;
 std::unordered_map<int, Controller*> Controller::running_gdbs = std::unordered_map<int, Controller*>();
@@ -59,7 +61,6 @@ Controller::Controller() {
         is_initialized = true;
     }
 }
-
 
 Controller::~Controller() {
     if (running) {
@@ -235,6 +236,7 @@ Breakpoint& Controller::add_breakpoint(
     breakpoints.insert({1, bp});
     return breakpoints.at(1);
 }
+
 
 Breakpoint::Breakpoint(
     Controller& controller,
