@@ -317,7 +317,10 @@ Breakpoint Controller::add_breakpoint(
 }
 
 bool Controller::remove_breakpoint(int bp_no) {
-    send("-break-delete " + std::to_string(bp_no) + "\r\n");
+    std::string reply = send("-break-delete " + std::to_string(bp_no) + "\r\n");
+    if (reply.find("No breakpoint number ") != std::string::npos) {
+        return false;
+    }
     return true;
 }
 
