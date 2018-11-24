@@ -51,7 +51,17 @@ namespace GDB {
     class Controller {
         // Module
         static bool is_initialized; // whether the module has been initialized
-        static std::unordered_map<int, Controller*> running_gdbs; // pid : contr
+
+        /* Maps pids to pointers to Controller instances associated with running
+           or stopped GDB processes. On spawn, a Controller is added here.
+           On termination (detected in sigchld_handler), a Controller is
+           removed from here.
+
+           There should not be any dangling pointers in here, because if the
+           client loses a Controller object, ~Controller() will be called,
+           which will kill the GDB process, causing sigchld_handler to remove
+           the Controller from here. */
+        static std::unordered_map<int, Controller*> running_gdbs;
         static void sigchld_handler(int sig_num, siginfo_t *sinfo, void *unused);
 
         // Communication
