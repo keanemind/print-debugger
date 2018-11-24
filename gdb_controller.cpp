@@ -6,9 +6,80 @@
 #include <iostream>
 #include <exception>
 #include <algorithm>
+#include <csignal>
+#include <sys/wait.h>
+#include <cassert>
 #include "gdb_controller.hpp"
 
 using namespace GDB;
+
+const char* NotRunningException::what() const throw() {
+    return "GDB process is not running.";
+}
+
+bool Controller::is_initialized = false;
+std::unordered_map<int, Controller&> Controller::running_gdbs = std::unordered_map<int, Controller&>();
+
+void Controller::sigchld_handler(int sig_num, siginfo_t *sinfo, void *unused) {
+    std::cout << "sigchld signal received" << std::endl;
+    if (sinfo->si_code == CLD_EXITED || sinfo->si_code == CLD_KILLED) {
+        // Terminated
+        std::cout << "termination" << std::endl;
+        waitid(P_PID, sinfo->si_pid, nullptr, WEXITED | WNOHANG);
+        // TODO: deal with this assert; clients may have their own child processes
+        assert(running_gdbs.count(sinfo->si_pid));
+        running_gdbs.at(sinfo->si_pid).running = false;
+        running_gdbs.erase(sinfo->si_pid);
+    } else if (sinfo->si_code == CLD_STOPPED) {
+        // Stopped
+        waitid(P_PID, sinfo->si_pid, nullptr, WSTOPPED | WNOHANG);
+        // TODO: deal with this assert; clients may have their own child processes
+        assert(running_gdbs.count(sinfo->si_pid));
+        assert(running_gdbs.at(sinfo->si_pid).running == true);
+        running_gdbs.at(sinfo->si_pid).running = false;
+    } else if (sinfo->si_code == CLD_CONTINUED) {
+        // Continued
+        waitid(P_PID, sinfo->si_pid, nullptr, WCONTINUED | WNOHANG);
+        // TODO: deal with this assert; clients may have their own child processes
+        assert(running_gdbs.count(sinfo->si_pid));
+        assert(running_gdbs.at(sinfo->si_pid).running == false);
+        running_gdbs.at(sinfo->si_pid).running = false;
+    }
+}
+
+Controller::Controller() {
+    if (!is_initialized) {
+        struct sigaction sa;
+        sa.sa_flags = SA_SIGINFO | SA_RESTART;
+        sa.sa_sigaction = Controller::sigchld_handler;
+        sigemptyset(&sa.sa_mask);
+        if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+            throw std::runtime_error(
+                "Error setting up module: sigaction failed."
+            );
+        }
+        is_initialized = true;
+    }
+}
+
+
+Controller::~Controller() {
+    if (running) {
+        std::cout <<"~Controller() running is TRUE" << std::endl;
+        this->kill();
+    } else {
+        close(fd0[1]);
+        close(fd1[0]);
+    }
+}
+
+bool Controller::is_running() {
+    return running;
+}
+
+int Controller::get_pid() {
+    return pid;
+}
 
 void Controller::spawn(std::string program_name) {
     if (this->running) {
@@ -77,6 +148,7 @@ void Controller::spawn(std::string program_name) {
         if (!std::string(gdb_start_output).compare(0, 5, "(gdb)")) {
             std::cout << "GDB is running." << std::endl;
             this->running = true;
+            running_gdbs.insert({pid, *this});
             break;
         } else if (!strcmp(gdb_start_output, "EXECVP_ERROR")) {
             throw std::runtime_error("execvp() failure.");
@@ -101,6 +173,9 @@ std::string Controller::send(
     std::string command,
     std::string response_terminator
 ) {
+    if (!running) {
+        throw NotRunningException();
+    }
     write(fd0[1], command.c_str(), command.size());
 
     // Give GDB 3 seconds to respond
@@ -128,10 +203,19 @@ std::string Controller::send(
 }
 
 void Controller::kill() {
-    if (!running) {
-        return;
+    std::cout << "kill()" << std::endl;
+    std::string resp = send("-gdb-exit\r\n", "^exit");
+    if (resp == "") {
+        // GDB did not reply. Force kill.
+        ::kill(pid, SIGKILL);
     }
-    send("-gdb-exit\r\n", "^exit");
+
+    // Block until sigchld_handler is run (GDB finishes exiting).
+    if (waitid(P_PID, pid, nullptr, WEXITED | WNOWAIT) == -1) {
+        std::string err = "waitid() failed: ";
+        err += strerror(errno);
+        throw std::runtime_error(err.c_str);
+    }
 }
 
 void Controller::run() {

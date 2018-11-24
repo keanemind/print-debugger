@@ -4,11 +4,16 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <exception>
 
 
 namespace GDB {
     class Breakpoint;
     class Controller;
+
+    struct NotRunningException : public std::exception {
+        const char* what() const throw();
+    };
 
     /* A GDB breakpoint. */
     class Breakpoint {
@@ -44,6 +49,11 @@ namespace GDB {
 
     /* An object for managing a GDB process. */
     class Controller {
+        // Module
+        static bool is_initialized; // whether the module has been initialized
+        static std::unordered_map<int, Controller&> running_gdbs; // pid : contr
+        static void sigchld_handler(int sig_num, siginfo_t *sinfo, void *unused);
+
         // Communication
         int fd0[2]; // PDB -> GDB
         int fd1[2]; // GDB -> PDB
@@ -57,13 +67,23 @@ namespace GDB {
         std::unordered_map<int, Breakpoint> breakpoints; // bp_no : bp
 
     public:
+        Controller();
+        ~Controller();
+
+        /* Returns true if this object is associated with a currently
+           running GDB process. */
+        bool is_running();
+
+        /* Returns the id of the GDB process. */
+        int get_pid();
+
         /* Spawn a GDB process. Does nothing if this
-        object is already associated with a running
-        GDB process. */
+           object is already associated with a running
+           GDB process. */
         void spawn(std::string program_name);
 
         /* Send text to the GDB process.
-           Wait for the process to reply with a line that starts with (gdb) */
+           Wait for the process to reply with a line that starts with (gdb). */
         std::string send(std::string command);
 
         /* Send text to the GDB process.
