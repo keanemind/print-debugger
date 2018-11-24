@@ -344,9 +344,12 @@ void Breakpoint::update_commands() {
     for (unsigned i = 0; i < commands.size(); i++) {
         combined += "\"" + commands[i] + "\" ";
     }
-    controller.send(
+    std::string reply = controller.send(
         "-break-commands " + std::to_string(id) + " " + combined + "\r\n"
     );
+    if (reply.find("^done") == std::string::npos) {
+        throw std::runtime_error("update_commands() failed: " + reply);
+    }
 }
 
 void Breakpoint::add_command(std::string command) {
