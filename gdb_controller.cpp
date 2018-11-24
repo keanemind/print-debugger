@@ -64,9 +64,6 @@ Controller::Controller() {
 Controller::~Controller() {
     if (running) {
         this->kill();
-    } else {
-        close(fd0[1]);
-        close(fd1[0]);
     }
 }
 
@@ -212,6 +209,8 @@ void Controller::kill() {
         err += strerror(errno);
         throw std::runtime_error(err.c_str());
     }
+    close(fd0[1]);
+    close(fd1[0]);
 }
 
 void Controller::run() {
