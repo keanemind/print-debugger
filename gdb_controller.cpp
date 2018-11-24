@@ -31,21 +31,18 @@ void Controller::sigchld_handler(int sig_num, siginfo_t *sinfo, void *unused) {
     if (sinfo->si_code == CLD_EXITED || sinfo->si_code == CLD_KILLED) {
         // Terminated
         waitid(P_PID, sinfo->si_pid, nullptr, WEXITED | WNOHANG);
-        // TODO: deal with this assert; clients may have their own child processes
         assert(running_gdbs.count(sinfo->si_pid));
         running_gdbs[sinfo->si_pid]->running = false;
         running_gdbs.erase(sinfo->si_pid);
     } else if (sinfo->si_code == CLD_STOPPED) {
         // Stopped
         waitid(P_PID, sinfo->si_pid, nullptr, WSTOPPED | WNOHANG);
-        // TODO: deal with this assert; clients may have their own child processes
         assert(running_gdbs.count(sinfo->si_pid));
         assert(running_gdbs[sinfo->si_pid]->running == true);
         running_gdbs[sinfo->si_pid]->running = false;
     } else if (sinfo->si_code == CLD_CONTINUED) {
         // Continued
         waitid(P_PID, sinfo->si_pid, nullptr, WCONTINUED | WNOHANG);
-        // TODO: deal with this assert; clients may have their own child processes
         assert(running_gdbs.count(sinfo->si_pid));
         assert(running_gdbs[sinfo->si_pid]->running == false);
         running_gdbs[sinfo->si_pid]->running = true;
@@ -220,7 +217,6 @@ void Controller::exit() {
 }
 
 void Controller::kill() {
-    // TODO: try SIGTERM, then SIGKILL
     ::kill(pid, SIGTERM);
     // ::kill(pid, SIGKILL);
 }
@@ -285,8 +281,6 @@ Breakpoint Controller::add_breakpoint(
 
 bool Controller::remove_breakpoint(int bp_no) {
     send("-break-delete " + std::to_string(bp_no) + "\r\n");
-
-    //TODO: Parse output, return true or false.
     return true;
 }
 
