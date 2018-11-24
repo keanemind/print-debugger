@@ -51,7 +51,7 @@ namespace GDB {
     class Controller {
         // Module
         static bool is_initialized; // whether the module has been initialized
-        static std::unordered_map<int, Controller&> running_gdbs; // pid : contr
+        static std::unordered_map<int, Controller*> running_gdbs; // pid : contr
         static void sigchld_handler(int sig_num, siginfo_t *sinfo, void *unused);
 
         // Communication

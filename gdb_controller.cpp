@@ -18,7 +18,7 @@ const char* NotRunningException::what() const throw() {
 }
 
 bool Controller::is_initialized = false;
-std::unordered_map<int, Controller&> Controller::running_gdbs = std::unordered_map<int, Controller&>();
+std::unordered_map<int, Controller*> Controller::running_gdbs = std::unordered_map<int, Controller*>();
 
 void Controller::sigchld_handler(int sig_num, siginfo_t *sinfo, void *unused) {
     if (sinfo->si_code == CLD_EXITED || sinfo->si_code == CLD_KILLED) {
@@ -26,22 +26,22 @@ void Controller::sigchld_handler(int sig_num, siginfo_t *sinfo, void *unused) {
         waitid(P_PID, sinfo->si_pid, nullptr, WEXITED | WNOHANG);
         // TODO: deal with this assert; clients may have their own child processes
         assert(running_gdbs.count(sinfo->si_pid));
-        running_gdbs.at(sinfo->si_pid).running = false;
+        running_gdbs[sinfo->si_pid]->running = false;
         running_gdbs.erase(sinfo->si_pid);
     } else if (sinfo->si_code == CLD_STOPPED) {
         // Stopped
         waitid(P_PID, sinfo->si_pid, nullptr, WSTOPPED | WNOHANG);
         // TODO: deal with this assert; clients may have their own child processes
         assert(running_gdbs.count(sinfo->si_pid));
-        assert(running_gdbs.at(sinfo->si_pid).running == true);
-        running_gdbs.at(sinfo->si_pid).running = false;
+        assert(running_gdbs[sinfo->si_pid]->running == true);
+        running_gdbs[sinfo->si_pid]->running = false;
     } else if (sinfo->si_code == CLD_CONTINUED) {
         // Continued
         waitid(P_PID, sinfo->si_pid, nullptr, WCONTINUED | WNOHANG);
         // TODO: deal with this assert; clients may have their own child processes
         assert(running_gdbs.count(sinfo->si_pid));
-        assert(running_gdbs.at(sinfo->si_pid).running == false);
-        running_gdbs.at(sinfo->si_pid).running = false;
+        assert(running_gdbs[sinfo->si_pid]->running == false);
+        running_gdbs[sinfo->si_pid]->running = true;
     }
 }
 
@@ -142,7 +142,7 @@ void Controller::spawn(std::string program_name) {
         if (!std::string(gdb_start_output).compare(0, 5, "(gdb)")) {
             std::cout << "GDB is running." << std::endl;
             this->running = true;
-            running_gdbs.insert({pid, *this});
+            running_gdbs[pid] = this;
             break;
         } else if (!strcmp(gdb_start_output, "EXECVP_ERROR")) {
             throw std::runtime_error("execvp() failure.");
