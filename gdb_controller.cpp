@@ -63,7 +63,7 @@ Controller::Controller() {
 
 Controller::~Controller() {
     if (running) {
-        this->kill();
+        this->exit();
     }
 }
 
@@ -110,7 +110,7 @@ void Controller::spawn(std::string program_name) {
 
         // execvp error
         write(fd1[1], "EXECVP_ERROR", 13);
-        exit(1);
+        ::exit(1);
     }
     // Parent
     // Close unused ends of pipes
@@ -196,11 +196,12 @@ std::string Controller::send(
     return ret;
 }
 
-void Controller::kill() {
+void Controller::exit() {
     std::string resp = send("-gdb-exit\r\n", "^exit");
     if (resp == "") {
+        // TODO: try SIGTERM, then SIGKILL
         // GDB did not reply. Force kill.
-        ::kill(pid, SIGKILL);
+        kill(pid, SIGKILL);
     }
 
     // Block until sigchld_handler is run (GDB finishes exiting).

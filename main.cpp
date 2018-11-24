@@ -24,5 +24,5 @@ int main(int argc, char** argv) {
     bp.add_command("print my_str");
     bp.remove_command("print cout");
     gdb.run();
-    gdb.kill();
+    gdb.exit();
 }

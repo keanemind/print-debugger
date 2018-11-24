@@ -92,7 +92,7 @@ namespace GDB {
         std::string send(std::string command, std::string response_terminator);
 
         /* Kill the GDB process associated with this Controller. */
-        void kill();
+        void exit();
 
         /* Run the target program. */
         void run();
