@@ -48,14 +48,14 @@ namespace GDB {
         Controller();
         ~Controller();
 
-        /* Returns true if this object is associated with a currently
+        /* Return true if this object is associated with a currently
            running GDB process. */
         bool is_running();
 
-        /* Returns the id of the GDB process. */
+        /* Return the id of the GDB process. */
         int get_pid();
 
-        /* Spawn a GDB process. Does nothing if this
+        /* Spawn a GDB process. Do nothing if this
            object is already associated with a running
            GDB process. */
         void spawn(std::string program_name);
@@ -79,12 +79,12 @@ namespace GDB {
         void cont();
 
         /* Add a breakpoint.
-           Returns the newly created breakpoint. */
+           Return the newly created breakpoint. */
         Breakpoint add_breakpoint(std::string filename, unsigned int line_no);
 
         /* Remove a breakpoint. Using the Breakpoint object passed in after
            calling this function is undefined behavior.
-           Returns true if the breakpoint existed. */
+           Return true if the breakpoint existed. */
         bool remove_breakpoint(int bp_no);
     };
 
@@ -110,7 +110,7 @@ namespace GDB {
     public:
         friend class Controller;
 
-        /* Returns the breakpoint's number in GDB. */
+        /* Return the breakpoint's number in GDB. */
         int get_id();
 
         std::string get_filename();
