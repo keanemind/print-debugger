@@ -293,8 +293,6 @@ Breakpoint::Breakpoint(
     this->id = id;
     this->filename = filename;
     this->line_no = line_no;
-    commands.push_back("continue");
-    update_commands();
 }
 
 int Breakpoint::get_id() {
@@ -320,21 +318,14 @@ void Breakpoint::update_commands() {
 }
 
 void Breakpoint::add_command(std::string command) {
-    commands.pop_back();
     commands.push_back(command);
-    commands.push_back("continue");
     update_commands();
 }
 
 bool Breakpoint::remove_command(std::string command) {
     auto it = std::find(commands.begin(), commands.end(), command);
     if (it != commands.end()) {
-        commands.pop_back();
-
-        std::swap(*it, commands.back());
-        commands.pop_back();
-
-        commands.push_back("continue");
+        commands.erase(it);
         update_commands();
     }
 }
