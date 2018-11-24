@@ -21,10 +21,8 @@ bool Controller::is_initialized = false;
 std::unordered_map<int, Controller&> Controller::running_gdbs = std::unordered_map<int, Controller&>();
 
 void Controller::sigchld_handler(int sig_num, siginfo_t *sinfo, void *unused) {
-    std::cout << "sigchld signal received" << std::endl;
     if (sinfo->si_code == CLD_EXITED || sinfo->si_code == CLD_KILLED) {
         // Terminated
-        std::cout << "termination" << std::endl;
         waitid(P_PID, sinfo->si_pid, nullptr, WEXITED | WNOHANG);
         // TODO: deal with this assert; clients may have their own child processes
         assert(running_gdbs.count(sinfo->si_pid));
@@ -65,7 +63,6 @@ Controller::Controller() {
 
 Controller::~Controller() {
     if (running) {
-        std::cout <<"~Controller() running is TRUE" << std::endl;
         this->kill();
     } else {
         close(fd0[1]);
@@ -203,7 +200,6 @@ std::string Controller::send(
 }
 
 void Controller::kill() {
-    std::cout << "kill()" << std::endl;
     std::string resp = send("-gdb-exit\r\n", "^exit");
     if (resp == "") {
         // GDB did not reply. Force kill.
