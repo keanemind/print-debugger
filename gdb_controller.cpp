@@ -309,7 +309,7 @@ int Breakpoint::get_line_no() {
 
 void Breakpoint::update_commands() {
     std::string combined;
-    for (int i = 0; i < commands.size(); i++) {
+    for (unsigned i = 0; i < commands.size(); i++) {
         combined += "\"" + commands[i] + "\" ";
     }
     controller.send(
@@ -342,4 +342,5 @@ Breakpoint& Breakpoint::operator=(const Breakpoint& right) {
     this->id = right.id;
     this->filename = right.filename;
     this->line_no = right.line_no;
+    return *this;
 }
