@@ -206,6 +206,9 @@ std::string Controller::await_reply(std::string response_terminator) {
 }
 
 void Controller::wait_for_stop(std::chrono::milliseconds timeout) {
+    if (!running) {
+        return;
+    }
     auto start = std::chrono::high_resolution_clock::now();
     auto now = start;
     auto duration = std::chrono::seconds(1);
