@@ -15,7 +15,12 @@ using namespace GDB;
 
 
 const char* NotRunningException::what() const throw() {
-    return "GDB process is not running.";
+    return "The GDB process is not running.";
+}
+
+
+const char* NoReplyException::what() const throw() {
+    return "The GDB process did not reply.";
 }
 
 
@@ -183,7 +188,8 @@ std::string Controller::await_reply(std::string response_terminator) {
     timeval timeout = {.tv_sec = 3, .tv_usec = 0};
     int result = select(fd1[0] + 1, &read_set, NULL, NULL, &timeout);
     if (result == 0) { // GDB did not reply
-        throw std::runtime_error("No reply from GDB.");
+        this->kill();
+        throw NoReplyException();
     }
 
     std::string ret;
@@ -201,12 +207,7 @@ std::string Controller::await_reply(std::string response_terminator) {
 }
 
 void Controller::exit() {
-    std::string resp = send("-gdb-exit\r\n", "^exit");
-    if (resp == "") {
-        // TODO: try SIGTERM, then SIGKILL
-        // GDB did not reply. Force kill.
-        kill(pid, SIGKILL);
-    }
+    send("-gdb-exit\r\n", "^exit");
 
     // Block until sigchld_handler is run (GDB finishes exiting).
     if (waitid(P_PID, pid, nullptr, WEXITED | WNOWAIT) == -1) {
@@ -216,6 +217,12 @@ void Controller::exit() {
     }
     close(fd0[1]);
     close(fd1[0]);
+}
+
+void Controller::kill() {
+    // TODO: try SIGTERM, then SIGKILL
+    ::kill(pid, SIGTERM);
+    // ::kill(pid, SIGKILL);
 }
 
 void Controller::run() {

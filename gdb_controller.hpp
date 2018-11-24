@@ -15,6 +15,10 @@ namespace GDB {
         const char* what() const throw();
     };
 
+    struct NoReplyException : public std::exception {
+        const char* what() const throw();
+    };
+
     /* An object for managing a GDB process. */
     class Controller {
         /* Module variables */
@@ -44,6 +48,15 @@ namespace GDB {
             int sig_num, siginfo_t *sinfo, void *unused
         );
 
+        /* Wait for and read output from the GDB process until a line that
+           starts with response_terminator is encountered.
+
+           Return the reply as a string.
+
+           If GDB does not reply, it will be assumed frozen. It will be killed
+           and a NoReplyException will be thrown. */
+        std::string await_reply(std::string response_terminator);
+
     public:
         Controller();
         ~Controller();
@@ -60,21 +73,25 @@ namespace GDB {
            GDB process. */
         void spawn(std::string program_name);
 
-        /* Send text to the GDB process.
+        /* Send a command to the GDB process.
            Wait for the process to reply with a line that starts with (gdb). */
         std::string send(std::string command);
 
-        /* Send text to the GDB process.
-           Wait for the process to reply with a line that starts with
-           response_terminator. */
+        /* Send a command to the GDB process, then wait for the process to reply
+           with a line that starts with response_terminator.
+
+           Return the reply as a string.
+
+           The command string must be something GDB will reply to;
+           see await_reply. */
         std::string send(std::string command, std::string response_terminator);
 
-        /* Await a reply from the GDB process.
-           Return the reply as a string. */
-        std::string await_reply(std::string response_terminator);
-
-        /* Kill the GDB process associated with this Controller. */
+        /* Send the GDB process associated with this Controller the exit
+           command. */
         void exit();
+
+        /* Force kill the GDB process associated with this Controller. */
+        void kill();
 
         /* Run the target program. */
         void run();
