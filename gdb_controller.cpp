@@ -223,7 +223,7 @@ void Controller::cont() {
     send("-exec-continue\r\n");
 }
 
-Breakpoint& Controller::add_breakpoint(
+Breakpoint Controller::add_breakpoint(
     std::string filename,
     unsigned int line_no
 ) {
@@ -232,9 +232,14 @@ Breakpoint& Controller::add_breakpoint(
     );
 
     // TODO: Parse output, initialize Breakpoint object, return it.
-    Breakpoint bp = Breakpoint(*this, 1, "", 1);
-    breakpoints.insert({1, bp});
-    return breakpoints.at(1);
+    return Breakpoint(*this, 1, "", 1);
+}
+
+bool Controller::remove_breakpoint(int bp_no) {
+    send("-break-delete " + std::to_string(bp_no) + "\r\n");
+
+    //TODO: Parse output, return true or false.
+    return true;
 }
 
 
@@ -250,11 +255,16 @@ Breakpoint::Breakpoint(
     commands.push_back("continue");
 }
 
-Breakpoint& Breakpoint::operator=(const Breakpoint& right) {
-    this->controller = right.controller;
-    this->id = right.id;
-    this->filename = right.filename;
-    this->line_no = right.line_no;
+int Breakpoint::get_id() {
+    return id;
+}
+
+std::string Breakpoint::get_filename() {
+    return filename;
+}
+
+int Breakpoint::get_line_no() {
+    return line_no;
 }
 
 void Breakpoint::update_commands() {
@@ -290,4 +300,11 @@ bool Breakpoint::remove_command(std::string command) {
 void Breakpoint::clear_commands() {
     commands.clear();
     update_commands();
+}
+
+Breakpoint& Breakpoint::operator=(const Breakpoint& right) {
+    this->controller = right.controller;
+    this->id = right.id;
+    this->filename = right.filename;
+    this->line_no = right.line_no;
 }

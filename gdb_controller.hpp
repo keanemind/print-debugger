@@ -40,9 +40,6 @@ namespace GDB {
         bool running = false;
         int pid = 0;
 
-        /* GDB information variables*/
-        std::unordered_map<int, Breakpoint> breakpoints; // bp_no : bp
-
         static void sigchld_handler(
             int sig_num, siginfo_t *sinfo, void *unused
         );
@@ -83,14 +80,12 @@ namespace GDB {
 
         /* Add a breakpoint.
            Returns the newly created breakpoint. */
-        Breakpoint& add_breakpoint(std::string filename, unsigned int line_no);
+        Breakpoint add_breakpoint(std::string filename, unsigned int line_no);
 
-        /* Remove a breakpoint.
+        /* Remove a breakpoint. Using the Breakpoint object passed in after
+           calling this function is undefined behavior.
            Returns true if the breakpoint existed. */
-        bool remove_breakpoint(Breakpoint& bp);
-
-        /* Returns the specified breakpoint. */
-        Breakpoint& get_breakpoint(unsigned int bp_no);
+        bool remove_breakpoint(int bp_no);
     };
 
     /* A GDB breakpoint. */
@@ -102,16 +97,25 @@ namespace GDB {
         int line_no;
         std::vector<std::string> commands;
 
-        /* Update GDB with the current command list. */
-        void update_commands();
-
-    public:
         Breakpoint(
             Controller& controller,
             int id,
             std::string filename,
             int line_no
         );
+
+        /* Update GDB with the current command list. */
+        void update_commands();
+
+    public:
+        friend class Controller;
+
+        /* Returns the breakpoint's number in GDB. */
+        int get_id();
+
+        std::string get_filename();
+
+        int get_line_no();
 
         /* Add a command to this breakpoint's command list. */
         void add_command(std::string command);
