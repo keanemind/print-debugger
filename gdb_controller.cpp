@@ -279,12 +279,8 @@ Breakpoint Controller::add_breakpoint(
         "-break-insert " + filename + ":" + std::to_string(line_no) + "\r\n"
     );
 
-    // Breakpoint fields that will be filled in
-    int id_field;
-    std::string filename_field;
-    int line_no_field;
-
     // Parse output to get Breakpoint object fields
+    Breakpoint bp = Breakpoint(*this);
     unsigned int bracket_open = reply.find("{");
     unsigned int bracket_close = reply.rfind("}");
     unsigned int start = bracket_open + 1;
@@ -300,11 +296,11 @@ Breakpoint Controller::add_breakpoint(
         std::string value = reply.substr(loc_equal + 2, value_len);
 
         if (field_name == "number") {
-            id_field = std::stoi(value);
+            bp.id = std::stoi(value);
         } else if (field_name == "file") {
-            filename_field = value;
+            bp.filename = value;
         } else if (field_name == "line") {
-            line_no_field = std::stoi(value);
+            bp.line_no = std::stoi(value);
         }
 
         start = end + 1;
@@ -314,7 +310,7 @@ Breakpoint Controller::add_breakpoint(
     // Even if the return is assigned somewhere, this will actually call the
     // constructor only once, so update_commands() is not going to
     // inefficiently be called twice. 
-    return Breakpoint(*this, id_field, filename_field, line_no_field);
+    return bp;
 }
 
 bool Controller::remove_breakpoint(int bp_no) {
@@ -323,16 +319,7 @@ bool Controller::remove_breakpoint(int bp_no) {
 }
 
 
-Breakpoint::Breakpoint(
-    Controller& controller,
-    int id,
-    std::string filename,
-    int line_no
-) : controller(controller) {
-    this->id = id;
-    this->filename = filename;
-    this->line_no = line_no;
-}
+Breakpoint::Breakpoint(Controller& controller) : controller(controller) {}
 
 int Breakpoint::get_id() {
     return id;

@@ -123,12 +123,7 @@ namespace GDB {
         int line_no;
         std::vector<std::string> commands;
 
-        Breakpoint(
-            Controller& controller,
-            int id,
-            std::string filename,
-            int line_no
-        );
+        Breakpoint(Controller& controller);
 
         /* Update GDB with the current command list. */
         void update_commands();
