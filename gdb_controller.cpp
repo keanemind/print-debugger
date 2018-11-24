@@ -327,7 +327,9 @@ bool Breakpoint::remove_command(std::string command) {
     if (it != commands.end()) {
         commands.erase(it);
         update_commands();
+        return true;
     }
+    return false;
 }
 
 void Breakpoint::clear_commands() {

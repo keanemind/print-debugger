@@ -124,7 +124,8 @@ namespace GDB {
         /* Add a command to this breakpoint's command list. */
         void add_command(std::string command);
 
-        /* Remove a command from this breakpoint's command list. */
+        /* Remove a command from this breakpoint's command list.
+           Return true if the command was found. */
         bool remove_command(std::string command);
 
         /* Clear all commands from this breakpoint. */
