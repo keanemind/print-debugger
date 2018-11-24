@@ -172,7 +172,10 @@ std::string Controller::send(
         throw NotRunningException();
     }
     write(fd0[1], command.c_str(), command.size());
+    return await_reply(response_terminator);
+}
 
+std::string Controller::await_reply(std::string response_terminator) {
     // Give GDB 3 seconds to respond
     fd_set read_set;
     FD_ZERO(&read_set);
@@ -216,7 +219,11 @@ void Controller::exit() {
 }
 
 void Controller::run() {
+    // Start running the target.
     send("-exec-run\r\n");
+
+    // Get output from GDB running the target.
+    await_reply("(gdb)");
 }
 
 void Controller::cont() {

@@ -69,6 +69,10 @@ namespace GDB {
            response_terminator. */
         std::string send(std::string command, std::string response_terminator);
 
+        /* Await a reply from the GDB process.
+           Return the reply as a string. */
+        std::string await_reply(std::string response_terminator);
+
         /* Kill the GDB process associated with this Controller. */
         void exit();
 
