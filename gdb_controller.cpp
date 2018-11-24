@@ -214,7 +214,7 @@ void Controller::kill() {
     if (waitid(P_PID, pid, nullptr, WEXITED | WNOWAIT) == -1) {
         std::string err = "waitid() failed: ";
         err += strerror(errno);
-        throw std::runtime_error(err.c_str);
+        throw std::runtime_error(err.c_str());
     }
 }
 
