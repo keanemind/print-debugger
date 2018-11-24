@@ -260,6 +260,7 @@ Breakpoint::Breakpoint(
     this->filename = filename;
     this->line_no = line_no;
     commands.push_back("continue");
+    update_commands();
 }
 
 int Breakpoint::get_id() {
