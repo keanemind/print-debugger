@@ -98,8 +98,8 @@ namespace GDB {
         /* Force kill the GDB process associated with this Controller. */
         void kill();
 
-        /* Run the target program. */
-        void run();
+        /* Run the target program. Return the output from GDB. */
+        std::string run();
 
         /* Continue the target program from a breakpoint. */
         void cont();

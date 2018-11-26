@@ -259,17 +259,20 @@ void Controller::kill() {
     }
 }
 
-void Controller::run() {
+std::string Controller::run() {
     // Start running the target.
-    send("-exec-run\r\n");
+    std::string reply = send("-exec-run\r\n");
+    if (reply.find("^running") == std::string::npos) {
+        throw std::runtime_error("Run failed.");
+    }
 
     // Get output from GDB running the target.
-    await_reply("(gdb)");
+    return await_reply("(gdb)");
 }
 
 void Controller::cont() {
     std::string reply = send("-exec-continue\r\n");
-    if (reply.find("^running") != 0) {
+    if (reply.find("^running") == std::string::npos) {
         throw std::runtime_error("Continue failed.");
     }
 }
